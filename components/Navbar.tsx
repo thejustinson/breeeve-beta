@@ -13,17 +13,23 @@ export default function Navbar() {
             animate={{ opacity: 1 }}
             className="text-xl font-bold"
           >
-            <span className="text-gray-900">bree</span>
-            <span className="text-purple-light">eve</span>
+            <Link href="/">
+              <span className="text-gray-900">bree</span>
+              <span className="text-purple-light">eve</span>
+            </Link>
           </motion.div>
 
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-purple-deep hover:bg-purple-light text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Get Started
-          </motion.button>
+          <div className="flex items-center">
+            <Link href="/auth">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-purple-deep hover:bg-purple-light text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+              >
+                Sign In
+              </motion.button>
+            </Link>
+          </div>
         </div>
       </div>
     </nav>
