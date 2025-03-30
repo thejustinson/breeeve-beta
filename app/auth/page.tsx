@@ -4,52 +4,99 @@ import { motion } from 'framer-motion'
 import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function AuthPage() {
     const { login, logout, ready, authenticated, user } = usePrivy()
     const router = useRouter()
+    const [isLoading, setIsLoading] = useState(false)
 
+    // Function to confirm or create user
+    const handleUserConfirmation = async () => {
+        if (!user) return null;
 
-    useEffect(() => {
-        const confirmUser = async () => {
-            if (authenticated && user) {
-                const response = await fetch(`/api/users/confirm`, {
+        try {
+            // Confirm user existence
+            const confirmResponse = await fetch('/api/users/confirm', {
+                method: 'POST',
+                body: JSON.stringify({ privy_id: user.id })
+            })
+            const confirmData = await confirmResponse.json()
+
+            // Handle different user states
+            if (!confirmResponse.ok) {
+                console.error("Error confirming user")
+                return null
+            }
+
+            if (confirmData.message === 'new') {
+                // Create new user if not exists
+                const createResponse = await fetch('/api/users/create', {
                     method: 'POST',
-                    body: JSON.stringify({ privy_id: user.id })
+                    body: JSON.stringify({ 
+                        privy_id: user.id, 
+                        email: user.email?.address 
+                    })
                 })
-                const data = await response.json()
-                console.log(data)
+                const createData = await createResponse.json()
 
-                if (!response.ok) { console.log("An error occurred while confirming the user") }
-
-                if (data.message === 'exists') {
-                    console.log("User already exists")
-                }
-
-                if (data.message === 'new') {
-                    console.log("User is new")
+                if (createData.message === 'created') {
+                    router.push('/onboarding')
                 }
             }
-        }
-        confirmUser()
-    }, [authenticated, user, router])
 
+            return confirmData
+        } catch (error) {
+            console.error("User confirmation failed", error)
+            return null
+        }
+    }
+
+    // Comprehensive sign-in handler
+    const handleSignIn = async () => {
+        setIsLoading(true)
+        try {
+            await login()
+            // The useEffect will handle post-login logic
+        } catch (error) {
+            console.error("Login failed", error)
+            setIsLoading(false)
+        }
+    }
+
+    // Handle user confirmation after authentication
+    useEffect(() => {
+        if (authenticated && user) {
+            handleUserConfirmation()
+                .finally(() => setIsLoading(false))
+        }
+    }, [authenticated, user])
+
+    // Don't render anything if Privy is not ready
     if (!ready) {
         return null
     }
 
-    const handleLogin = async () => {
-        await login()
-    }
-
-
-    // const confirmUser = async () => {
-
-    //     const response = await fetch(`/api/confirm-user?privy_id=did:privy:cm88x1rpl03kq13tx1tvapu49`)
-    //     const data = await response.json()
-    //     console.log(data)
-    // }
+    // Loading animation component
+    const LoginLoadingAnimation = () => (
+        <div className="flex items-center justify-center space-x-2">
+            {[1, 2, 3].map((dot) => (
+                <motion.div
+                    key={dot}
+                    className="w-2 h-2 bg-white rounded-full"
+                    initial={{ opacity: 0.3 }}
+                    animate={{ 
+                        opacity: [0.3, 1, 0.3],
+                        transition: { 
+                            duration: 1.5, 
+                            delay: (dot - 1) * 0.3,
+                            repeat: Infinity 
+                        }
+                    }}
+                />
+            ))}
+        </div>
+    )
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 px-4">
@@ -89,12 +136,17 @@ export default function AuthPage() {
                     </div>
 
                     <motion.button
-                        onClick={handleLogin}
+                        onClick={handleSignIn}
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
-                        className="w-full bg-purple-deep hover:bg-purple-light text-white py-4 rounded-lg font-medium transition-colors"
+                        disabled={isLoading}
+                        className="w-full bg-purple-deep hover:bg-purple-light text-white py-4 rounded-lg font-medium transition-colors flex items-center justify-center"
                     >
-                        Continue with Privy
+                        {isLoading ? (
+                            <LoginLoadingAnimation />
+                        ) : (
+                            "Continue with Privy"
+                        )}
                     </motion.button>
 
                     <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -115,9 +167,6 @@ export default function AuthPage() {
                     </Link>
                 </p>
             </motion.div>
-
-
-            {/* <button onClick={confirmUser} className='bg-purple-deep text-white px-4 py-2 rounded-lg font-medium transition-colors active:scale-95 mt-4'>Confirm User</button> */}
         </div>
     )
-} 
+}

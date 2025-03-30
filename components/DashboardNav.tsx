@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useContext, createContext } from 'react'
 import { 
   HomeIcon, 
   LinkIcon, 
@@ -55,6 +55,8 @@ type SideNavProps = {
   onClose: () => void;
 }
 
+const SideNavContext = createContext({ onClose: () => {} })
+
 export function TopNav({ onMenuClick }: { onMenuClick: () => void }) {
   return (
     <div className="h-16 fixed top-0 right-0 left-0 z-10 bg-white border-b border-gray-100">
@@ -92,7 +94,7 @@ export function SideNav({ isOpen, onClose }: SideNavProps) {
   const pathname = usePathname()
 
   return (
-    <>
+    <SideNavContext.Provider value={{ onClose }}>
       {/* Desktop Sidebar */}
       <div className="hidden lg:block w-64 fixed top-0 left-0 h-screen bg-white border-r border-gray-100">
         <div className="h-16 px-6 flex items-center border-b border-gray-100">
@@ -132,11 +134,13 @@ export function SideNav({ isOpen, onClose }: SideNavProps) {
 
         <NavContent pathname={pathname} />
       </div>
-    </>
+    </SideNavContext.Provider>
   )
 }
 
 function NavContent({ pathname }: { pathname: string }) {
+  const { onClose } = useContext(SideNavContext)
+
   return (
     <div className="p-4 space-y-2">
       <p className="px-4 text-xs font-medium text-gray-400 uppercase tracking-wider mb-4">
@@ -148,6 +152,7 @@ function NavContent({ pathname }: { pathname: string }) {
           <Link
             key={item.name}
             href={item.href}
+            onClick={() => onClose()}
             className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all relative group ${
               isActive 
                 ? 'text-purple-deep bg-purple-50' 

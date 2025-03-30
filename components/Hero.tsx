@@ -1,11 +1,21 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-white">
-      <div className="max-w-5xl mx-auto py-20">
+    <section className="relative h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-white overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 w-full h-full">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+          <div className="absolute inset-0 [background:repeating-linear-gradient(0deg,transparent,transparent_23px,#A390F508_23px,#A390F508_24px),repeating-linear-gradient(90deg,transparent,transparent_23px,#38226108_23px,#38226108_24px)]" />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white" />
+      </div>
+
+      <div className="relative max-w-5xl mx-auto py-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -19,7 +29,7 @@ export default function Hero() {
             className="inline-block px-4 py-1.5 bg-purple-light/10 rounded-full"
           >
             <span className="text-purple-deep font-medium">
-              ✨ Beta Testing
+              💫 Early Access
             </span>
           </motion.div>
           
@@ -36,6 +46,7 @@ export default function Hero() {
           </p>
           
           <div className="flex items-center justify-center gap-4">
+            <Link href="/auth">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -43,14 +54,15 @@ export default function Hero() {
             >
               Get Started →
             </motion.button>
-            
-            <motion.button
+            </Link>
+
+            {/* <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="px-8 py-4 rounded-xl text-lg font-semibold text-gray-600 hover:text-purple-deep transition-colors duration-200"
             >
               Learn More
-            </motion.button>
+            </motion.button> */}
           </div>
 
           <motion.div

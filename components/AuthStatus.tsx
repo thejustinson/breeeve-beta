@@ -10,16 +10,19 @@ export function AuthStatus() {
 
     useEffect(() => {
         if (authenticated && user) {
-            console.log('✅ User is authenticated:', user);
+            // console.log('✅ User is authenticated:', user);
             // if (pathname === '/auth') {
             //     router.replace('/dashboard');
             // }
         } else {
             // Check if user is on a dashboard path but not authenticated
-            if (pathname.startsWith('/dashboard')) {
-                console.log('❌ Unauthenticated user attempting to access dashboard');
-                router.replace('/auth');
-            }
+            // if (pathname.startsWith('/dashboard')) {
+            //     router.replace('/auth');
+            // }
+
+            // if (pathname.startsWith('/onboarding')) {
+            //     router.replace('/auth');
+            // }
         }
     }, [authenticated, user, pathname, router]);
 
