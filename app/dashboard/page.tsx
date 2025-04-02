@@ -73,6 +73,24 @@ export default function Dashboard() {
             link: data.link,
             balance: data.balance
           }
+
+          if(!userdata.public_key) {
+            const publicKey = user?.linkedAccounts.find(
+              account => account.type === "wallet" && account.chainType === "solana"
+          ) as { address: string } | undefined;
+
+            const update_public_key = await fetch('api/users/update/public-key', {
+              method: 'POST',
+              body: JSON.stringify({ public_key: publicKey, privy_id: user?.id })
+            })
+
+            if(!update_public_key.ok) {
+              console.log('Error updating public key')
+            }
+            
+            userdata.public_key = publicKey
+          }
+
           setUserData(userdata)
           console.log(userdata)
         }
