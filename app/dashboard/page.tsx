@@ -2,8 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CreateLinkModal } from '@/components/CreateLinkModal'
+import { usePrivy } from '@privy-io/react-auth'
+import { useRouter } from 'next/navigation'
 
 const mockTransactions = [
   {
@@ -24,8 +26,78 @@ const mockTransactions = [
   },
 ]
 
+interface User {
+  username: string;
+  name: string;
+  email: string;
+  image: string;
+  public_key: string | null;
+  link: string;
+  balance: number;
+}
+
 export default function Dashboard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const router = useRouter()
+  const { authenticated, user } = usePrivy()
+  const [userData, setUserData] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch('/api/users/fetch', {
+          method: 'POST',
+          body: JSON.stringify({ privy_id: user?.id })
+        })
+        const data = await response.json()
+
+        if(data.error) {
+          console.log(data.error)
+        }
+
+        if(response.ok){
+          if(!data.onboarded) {
+            console.log('User not onboarded')
+            router.push('/onboarding')
+            return
+          }
+    
+          const userdata = {
+            username: data.username,
+            name: data.name,
+            email: data.email,
+            image: data.image,
+            public_key: data.public_key,
+            link: data.link,
+            balance: data.balance
+          }
+          setUserData(userdata)
+          console.log(userdata)
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    if (user?.id) {
+      fetchUserData()
+    } else {
+      setIsLoading(false)
+    }
+  }, [user?.id, router])
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-purple-deep/20 border-t-purple-deep rounded-full animate-spin"></div>
+        <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+      </div>
+    )
+  }
 
   return (
     <>
