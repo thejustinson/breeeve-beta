@@ -16,7 +16,8 @@ import {
   Bars3Icon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
-
+import { useRouter } from 'next/navigation'
+import { usePrivy } from '@privy-io/react-auth'
 const navItems = [
   { 
     name: 'Overview', 
@@ -140,6 +141,8 @@ export function SideNav({ isOpen, onClose }: SideNavProps) {
 
 function NavContent({ pathname }: { pathname: string }) {
   const { onClose } = useContext(SideNavContext)
+  const { logout } = usePrivy()
+  const router = useRouter()
 
   return (
     <div className="p-4 space-y-2">
@@ -202,7 +205,12 @@ function NavContent({ pathname }: { pathname: string }) {
           </button>
         </div>
 
-        <button className="mt-4 w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors">
+        <button className="mt-4 w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+        onClick={() => {
+          logout()
+          router.push('/')
+        }}
+        >
           <ArrowLeftOnRectangleIcon className="w-5 h-5" />
           <span>Log Out</span>
         </button>
