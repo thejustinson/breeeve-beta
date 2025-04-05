@@ -36,12 +36,20 @@ interface User {
   balance: number;
 }
 
+interface Link {
+  id: string;
+  user_id: string;
+  link: string;
+  created_at: string;
+}
+
 export default function Dashboard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const router = useRouter()
-  const { authenticated, user } = usePrivy()
+  const { user } = usePrivy()
   const [userData, setUserData] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [links, setLinks] = useState<Link[]>([])
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -81,14 +89,14 @@ export default function Dashboard() {
 
             const update_public_key = await fetch('api/users/update/public-key', {
               method: 'POST',
-              body: JSON.stringify({ public_key: publicKey, privy_id: user?.id })
+              body: JSON.stringify({ public_key: publicKey?.address, privy_id: user?.id })
             })
 
             if(!update_public_key.ok) {
               console.log('Error updating public key')
             }
-            
-            userdata.public_key = publicKey
+
+            userdata.public_key = publicKey?.address
           }
 
           setUserData(userdata)
@@ -100,9 +108,21 @@ export default function Dashboard() {
         setIsLoading(false)
       }
     }
+
+    const fetchLinks = async () => {
+      const response = await fetch('/api/links/fetch', {
+        method: 'POST',
+        body: JSON.stringify({ privy_id: user?.id })
+      })
+      const data = await response.json()
+      if (data.length > 0) {
+        setLinks(data)
+      }
+    }
     
     if (user?.id) {
       fetchUserData()
+      fetchLinks()
     } else {
       setIsLoading(false)
     }
@@ -137,7 +157,7 @@ export default function Dashboard() {
               <div className="sm:hidden relative space-y-5">
                 <div className="space-y-1.5">
                   <h1 className="text-2xl font-semibold">
-                    Welcome back, Alex
+                    Welcome back, {userData?.name}
                   </h1>
                   <p className="text-sm text-white/80">
                     Your balance is growing steadily
@@ -146,7 +166,7 @@ export default function Dashboard() {
 
                 <div>
                   <div className="text-3xl font-bold">
-                    $1,234.56
+                    ${userData?.balance}
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-sm text-white/80">
                     <ArrowUpIcon className="w-3.5 h-3.5" />
@@ -169,7 +189,7 @@ export default function Dashboard() {
                 <div className="flex justify-between items-center gap-4">
                   <div className="space-y-2">
                     <h1 className="text-3xl font-semibold">
-                      Welcome back, Alex
+                      Welcome back, {userData?.name}
                     </h1>
                     <p className="text-white/80">
                       Your balance is growing steadily
@@ -186,7 +206,7 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-8">
                   <div className="text-5xl font-bold">
-                    $1,234.56
+                    ${userData?.balance}
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-white/80">
                     <ArrowUpIcon className="w-3.5 h-3.5" />
@@ -207,10 +227,12 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-gray-500 font-medium">Active Links</h3>
                   <span className="bg-purple-50 text-purple-deep px-3 py-1 rounded-full text-sm font-medium">
-                    5 Total
+                    {links.length} Total
                   </span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">3</div>
+                <div className="text-3xl font-bold text-gray-900">
+                  {links.length}
+                </div>
                 <p className="mt-2 text-sm text-gray-500">Links with recent activity</p>
               </motion.div>
 

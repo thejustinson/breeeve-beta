@@ -3,6 +3,7 @@ import supabase from '@/utils/SupabaseClient'
 
 export async function POST(request: NextRequest) {
   const { public_key, privy_id } = await request.json()
+  console.log(public_key, privy_id)
 
   const { data, error } = await supabase
     .from('users')
@@ -12,6 +13,8 @@ export async function POST(request: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  
 
   return NextResponse.json({ data })
 }
