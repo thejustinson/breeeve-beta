@@ -100,6 +100,11 @@ export default function Dashboard() {
           }
 
           setUserData(userdata)
+
+          if(localStorage.getItem('userdata') === null || JSON.parse(localStorage.getItem('userdata') || '{}').username !== userdata.username) {
+            localStorage.setItem('userdata', JSON.stringify(userdata))
+          }
+          
           console.log(userdata)
         }
       } catch (error) {
