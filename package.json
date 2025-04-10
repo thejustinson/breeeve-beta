@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@privy-io/react-auth": "^2.6.4",
+    "@privy-io/react-auth": "^1.89.0",
     "@supabase/supabase-js": "^2.49.1",
     "@uploadthing/react": "^7.3.0",
     "canvas-confetti": "^1.9.3",

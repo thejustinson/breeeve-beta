@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🌐 Breeeve — Effortless Global Payments in Stablecoins
 
-## Getting Started
+Breeeve is a modern crypto payment platform designed to help freelancers, merchants, and creators **accept and manage USDC payments** globally with ease. No seed phrases. No technical hurdles. Just smooth, stable, borderless payments.
 
-First, run the development server:
+> 💡 Think of it as your Stripe for stablecoins — optimized for Web2 simplicity with Web3 power.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **📨 Payment Links**  
+  Create one-time or reusable payment links to get paid in seconds — no code needed.
+- **🌎 Embedded Wallets**  
+  Every user gets a secure, auto-managed wallet behind the scenes (powered by Web3Auth or similar).
+- **📦 Digital Product Delivery**  
+  Automatically deliver files or redirect users after successful payment.
+- **🔔 Email Notifications**  
+  Stay updated with email alerts on every successful payment (optional).
+- **📊 Simple Dashboard**  
+  Track payments, manage links, and monitor revenue all from a single clean dashboard.
+- **💵 USDC-Only (for now)**  
+  Start with stable, fast, and low-fee payments. More stablecoins coming soon.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+- **Frontend**: Next.js, TypeScript, TailwindCSS  
+- **Animations**: Framer Motion
+- **Files**: Uploadthing
+- **UI Components**: Headless UI  
+- **Wallet Infrastructure**: Privy
+- **Payments**: Solana / USDC on-chain detection  
+- **Storage**: Supabase 
 
-## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+## 📦 Planned Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- 🧾 Invoicing system with recurring payments
+- 🔁 Subscriptions and billing management
+- 🌍 Multi-currency support (EURC, PYUSD, etc.)
+- 💳 Offramp partnerships for easy withdrawals
+- 🤝 Breeeve for teams
+- 🔐 Custom branded payment pages
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## 🧪 Test Accounts
 
-## Deploy on Vercel
+Coming soon — a testnet mode for trying Breeeve without real USDC.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🧑‍💻 Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+We love contributors! To help improve Breeeve:
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feat/your-feature`)
+3. Commit your changes
+4. Push and open a PR
+
+Please write clear, concise commits and document major UI logic if needed.
+
+## 🧠 Philosophy
+
+Breeeve was built with one goal:
+
+> Make it dead simple for anyone, anywhere, to accept stablecoin payments without needing to learn crypto.
+
+We're reimagining payments for the new internet. One payment link at a time.
+
+## 📫 Contact
+
+Want to partner, integrate, or give feedback?
+
+- Email: team@breeeve.com
+- Twitter: @withbreeeve
+- Join the waitlist: https://breeeve.com
+
+## 🏗️ Maintained by
+
+**Justin Jr**  - https://x.com/thejustinson
+Founder & Engineer of Breeeve  
+Superteam Nigeria State Mod  
+Building the future of creator payments, globally.
