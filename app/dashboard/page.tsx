@@ -135,9 +135,77 @@ export default function Dashboard() {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-purple-deep/20 border-t-purple-deep rounded-full animate-spin"></div>
-        <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column Skeleton */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Welcome Card Skeleton */}
+            <div className="bg-white rounded-3xl p-5 sm:p-8 relative overflow-hidden animate-pulse">
+              <div className="space-y-4">
+                <div className="h-8 bg-gray-200 rounded-lg w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded-lg w-1/2"></div>
+                <div className="h-12 bg-gray-200 rounded-lg w-1/3 mt-8"></div>
+                <div className="h-4 bg-gray-200 rounded-lg w-1/4"></div>
+              </div>
+            </div>
+
+            {/* Stats Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 animate-pulse">
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <div className="h-4 bg-gray-200 rounded-lg w-1/3"></div>
+                    <div className="h-4 bg-gray-200 rounded-lg w-1/4"></div>
+                  </div>
+                  <div className="h-8 bg-gray-200 rounded-lg w-1/4"></div>
+                  <div className="h-4 bg-gray-200 rounded-lg w-1/2"></div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 animate-pulse">
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <div className="h-4 bg-gray-200 rounded-lg w-1/3"></div>
+                    <div className="h-4 bg-gray-200 rounded-lg w-1/4"></div>
+                  </div>
+                  <div className="h-8 bg-gray-200 rounded-lg w-1/4"></div>
+                  <div className="h-4 bg-gray-200 rounded-lg w-1/2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column Skeleton */}
+          <div className="lg:col-span-4">
+            <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
+              <div className="p-6 border-b border-gray-100 animate-pulse">
+                <div className="flex justify-between">
+                  <div className="h-4 bg-gray-200 rounded-lg w-1/3"></div>
+                  <div className="h-4 bg-gray-200 rounded-lg w-1/4"></div>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {[1, 2].map((item) => (
+                  <div key={item} className="p-4 animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-gray-200 rounded-2xl"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex justify-between">
+                          <div className="h-4 bg-gray-200 rounded-lg w-1/4"></div>
+                          <div className="h-4 bg-gray-200 rounded-lg w-1/4"></div>
+                        </div>
+                        <div className="flex justify-between">
+                          <div className="h-3 bg-gray-200 rounded-lg w-1/5"></div>
+                          <div className="h-3 bg-gray-200 rounded-lg w-1/5"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -331,4 +399,4 @@ export default function Dashboard() {
       />
     </>
   )
-} 
+}
