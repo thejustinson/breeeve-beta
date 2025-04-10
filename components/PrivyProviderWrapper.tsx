@@ -20,7 +20,7 @@ export function PrivyProviderWrapper({ children }: { children: React.ReactNode }
                     logo: 'https://pbs.twimg.com/profile_images/1900137034427031553/x94y6_J4_400x400.jpg',
                     accentColor: '#A390F5',
                     walletChainType: 'solana-only',
-                    walletList: ['phantom', 'backpack', 'solflare', 'detected_wallets', 'wallet_connect'],
+                    walletList: ['phantom', 'detected_wallets', 'wallet_connect'],
                 },
                 embeddedWallets: {
                     createOnLogin: 'users-without-wallets',
