@@ -8,7 +8,8 @@ export default function TestUpload() {
     const [isDragging, setIsDragging] = useState(false);
 
     const { startUpload } = useUploadThing("imageUploader", {
-        onClientUploadComplete: () => {
+        onClientUploadComplete: async (data) => {
+            console.log("upload complete", data);
             alert("uploaded successfully!");
             setFiles([]);
         },

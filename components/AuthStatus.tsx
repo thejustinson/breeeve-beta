@@ -1,30 +1,42 @@
 "use client";
 import { usePrivy } from "@privy-io/react-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 export function AuthStatus() {
-    const { authenticated, user } = usePrivy();
+    const { authenticated, user, ready } = usePrivy();
     const pathname = usePathname();
     const router = useRouter();
+    const [isNavigating, setIsNavigating] = useState(false);
 
     useEffect(() => {
-        if (authenticated && user) {
-            console.log('✅ User is authenticated:', user);
-            if (pathname === '/auth') {
-                router.replace('/dashboard');
-            }
-        } else {
-            // Check if user is on a dashboard path but not authenticated
-            if (pathname.startsWith('/dashboard')) {
-                router.replace('/auth');
-            }
+        // Don't perform any redirects until Privy is ready
+        if (!ready) return;
+        
+        // Prevent multiple redirects
+        if (isNavigating) return;
 
-            if (pathname.startsWith('/onboarding')) {
-                router.replace('/auth');
+        const handleNavigation = async () => {
+            if (authenticated && user) {
+                // Only redirect from auth page to dashboard if explicitly on the auth page
+                if (pathname === '/auth') {
+                    setIsNavigating(true);
+                    await router.replace('/dashboard');
+                }
+            } else {
+                // Protected routes that require authentication
+                const protectedPaths = ['/dashboard', '/onboarding'];
+                const isProtectedRoute = protectedPaths.some(path => pathname.startsWith(path));
+                
+                if (isProtectedRoute) {
+                    setIsNavigating(true);
+                    await router.replace('/auth');
+                }
             }
-        }
-    }, [authenticated, user, pathname, router]);
+        };
+
+        handleNavigation();
+    }, [authenticated, user, pathname, router, ready, isNavigating]);
 
     return null;
 }

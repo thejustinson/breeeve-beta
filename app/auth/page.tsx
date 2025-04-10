@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 export default function AuthPage() {
-    const { login, logout, ready, authenticated, user } = usePrivy()
+    const { login, ready, authenticated, user } = usePrivy()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
 

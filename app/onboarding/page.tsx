@@ -53,22 +53,33 @@ export default function Onboarding() {
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
-      setCheckingOnboardingStatus(true)
+      if (checkingOnboardingStatus) return; // Prevent multiple simultaneous checks
+      
+      setCheckingOnboardingStatus(true);
       try {
         const response = await fetch('/api/users/onboarded', {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({ privy_id: user?.id })
-        })
-        const data = await response.json()
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to check onboarding status');
+        }
+        
+        const data = await response.json();
         if (data.onboarded) {
-          router.push('/dashboard')
+          await router.replace('/dashboard');
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error)
+        console.error('Error checking onboarding status:', error);
+        // Optionally show a user-friendly error message
       } finally {
-        setCheckingOnboardingStatus(false)
+        setCheckingOnboardingStatus(false);
       }
-    }
+    };
     
     if (user?.id) {
       checkOnboardingStatus()
@@ -140,7 +151,7 @@ export default function Onboarding() {
           name: formData.fullName,
           image: fileUrl,
           public_key: publicKey?.address,
-          link: `pay.breeeve.com/${formData.username}`
+          link: `breeeve.com/pay/${formData.username}`
         })
       })
   
@@ -240,7 +251,7 @@ export default function Onboarding() {
                       <div className="mt-1 p-4 bg-gray-50 rounded-xl">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <LinkIcon className="w-4 h-4" />
-                          <span>pay.breeeve.com/{formData.username || 'username'}</span>
+                          <span>breeeve.com/pay/{formData.username || 'username'}</span>
                         </div>
                       </div>
                     </motion.div>
@@ -388,7 +399,7 @@ export default function Onboarding() {
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <LinkIcon className="w-4 h-4" />
-                          <span>pay.breeeve.com/{formData.username}</span>
+                          <span>breeeve.com/pay/{formData.username}</span>
                         </div>
                       </div>
                     </motion.div>
