@@ -1,10 +1,11 @@
 "use client";
 
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useUploadThing } from "@/utils/uploadthing";
+import { usePrivy } from "@privy-io/react-auth";
 
 type CreateLinkModalProps = {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
       console.log("upload complete", data);
     },
   });
+  const { user } = usePrivy();
   
   const initialFormData = {
     // Step 1: Basic Info
@@ -51,6 +53,9 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
   };
 
   const [formData, setFormData] = useState(initialFormData);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
@@ -91,6 +96,20 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
     e.preventDefault();
     
     if (step !== 4) {
+      // Validate required fields before proceeding to the next step
+      if (step === 3 && formData.isDigitalProduct) {
+        if (formData.productImages.length === 0) {
+          setUploadError('Please upload at least one product image');
+          setTimeout(() => setUploadError(null), 3000);
+          return;
+        }
+        if (!formData.downloadLink) {
+          setUploadError('Please provide a download link');
+          setTimeout(() => setUploadError(null), 3000);
+          return;
+        }
+      }
+      
       setStep(step + 1);
       return;
     }
@@ -98,18 +117,38 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
     setIsSubmitting(true);
     
     try {
+      let imageUrls = null;
+      
+      // Upload images if this is a digital product
+      if (formData.isDigitalProduct && formData.productImages.length > 0) {
+        const uploadResult = await startUpload(formData.productImages);
+        if (uploadResult) {
+          console.log("Uploaded images:", uploadResult);
+          imageUrls = JSON.stringify(uploadResult.map(img => img.ufsUrl));
+        }
+      }
+      
       const paymentLink = generatePaymentLink(username, formData.slug);
       
       const submissionData = {
-        ...formData,
-        paymentLink,
+        user_id: user?.id,
+        name: formData.name,
+        description: formData.description,
+        link: paymentLink,
+        amount: formData.isFlexibleAmount ? null : parseFloat(formData.amount),
+        is_flexible_amount: formData.isFlexibleAmount,
+        currency: formData.currency,
+        payment_limit: formData.paymentLimit ? parseInt(formData.paymentLimit) : null,
+        expires_at: formData.expirationDate ? new Date(formData.expirationDate).toISOString() : null,
+        redirect_url: formData.redirectUrl || null,
+        enable_notifications: formData.enableEmailNotifications,
+        // Add product data if this is a digital product
+        product: formData.isDigitalProduct ? {
+          download_link: formData.downloadLink,
+          image_urls: imageUrls
+        } : null
       };
       
-      // if (formData.isDigitalProduct) {
-      //   await startUpload(formData.productImages);
-        
-      // }
-
       const response = await createLink(submissionData);
       console.log("Response:", response);
       
@@ -141,6 +180,60 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length + formData.productImages.length > 3) {
+      setUploadError('You can only upload up to 3 images');
+      setTimeout(() => setUploadError(null), 3000);
+      return;
+    }
+
+    setFormData({
+      ...formData,
+      productImages: [...formData.productImages, ...imageFiles].slice(0, 3)
+    });
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+      
+      if (imageFiles.length + formData.productImages.length > 3) {
+        setUploadError('You can only upload up to 3 images');
+        setTimeout(() => setUploadError(null), 3000);
+        return;
+      }
+
+      setFormData({
+        ...formData,
+        productImages: [...formData.productImages, ...imageFiles].slice(0, 3)
+      });
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData({
+      ...formData,
+      productImages: formData.productImages.filter((_, i) => i !== index)
+    });
+  };
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={handleClose}>
@@ -167,31 +260,31 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 shadow-2xl transition-all">
-                <div className="flex items-center justify-between mb-2">
-                  <Dialog.Title className="text-xl font-semibold text-gray-900 gradient-text">
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-8 shadow-2xl transition-all">
+                <div className="flex items-center justify-between mb-6">
+                  <Dialog.Title className="text-2xl font-bold text-gray-900">
                     Create Payment Link
                   </Dialog.Title>
                   <button
                     onClick={handleClose}
-                    className="text-gray-400 hover:text-gray-500 transition-colors"
+                    className="text-gray-400 hover:text-gray-500 transition-colors p-2 hover:bg-gray-50 rounded-lg"
                   >
                     <XMarkIcon className="w-6 h-6" />
                   </button>
                 </div>
                 
                 {/* Progress bar */}
-                <div className="mb-6">
-                  <div className="flex justify-between text-sm text-gray-500 mb-1">
-                    <span>Step {step} of 4: {
+                <div className="mb-8">
+                  <div className="flex justify-between text-sm text-gray-500 mb-2">
+                    <span className="font-medium">Step {step} of 4: {
                       step === 1 ? "Basic Info" : 
                       step === 2 ? "Payment Settings" :
                       step === 3 ? "Product Delivery" : 
                       "Final Setup"
                     }</span>
-                    <span>{Math.round(progress)}%</span>
+                    <span className="font-medium">{Math.round(progress)}%</span>
                   </div>
-                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
                     <motion.div 
                       className="h-full bg-purple-deep"
                       initial={{ width: `${(step-1)/4 * 100}%` }}
@@ -201,7 +294,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-8">
                   {step === 1 && (
                     <motion.div
                       {...fadeInUp}
@@ -230,7 +323,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                               slug: cleanSlug,
                             });
                           }}
-                          className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 transition-all shadow-sm"
+                          className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 transition-all shadow-sm text-gray-900 placeholder-gray-400"
                           placeholder="What's this link for?"
                         />
                       </div>
@@ -239,29 +332,27 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Link (Optional)
                         </label>
-                        <span className="text-sm text-gray-500 mb-2">
+                        <p className="text-sm text-gray-500 mb-3">
                           This will be the link to your payment page. If you don&apos;t have a custom link in mind, we&apos;ll generate one for you from your title.
-                        </span>
-                        <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl shadow-sm overflow-hidden focus-within:border-purple-deep/20 focus-within:ring-2 focus-within:ring-purple-deep/10 transition-all">
-                          <span className="px-4 text-gray-500 bg-gray-100/50 py-3 border-r border-gray-200">
-                            breeeve.com/pay/{username}/
-                          </span>
-                          <input
-                            type="text"
-                            value={formData.slug}
-                            onChange={(e) => {
-                              const cleanSlug = e.target.value
-                                .toLowerCase()
-                                .replace(/\s+/g, "-")
-                                .replace(/[^a-z0-9-]/g, "")
-                                .replace(/-+/g, "-")
-                                .replace(/^-|-$/g, "");
-                              
-                              setFormData({ ...formData, slug: cleanSlug });
-                            }}
-                            className="flex-1 px-4 py-3 bg-transparent focus:outline-none"
-                            placeholder="your-link-name"
-                          />
+                        </p>
+                        <input
+                          type="text"
+                          value={formData.slug}
+                          onChange={(e) => {
+                            const cleanSlug = e.target.value
+                              .toLowerCase()
+                              .replace(/\s+/g, "-")
+                              .replace(/[^a-z0-9-]/g, "")
+                              .replace(/-+/g, "-")
+                              .replace(/^-|-$/g, "");
+                            
+                            setFormData({ ...formData, slug: cleanSlug });
+                          }}
+                          className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 transition-all shadow-sm text-gray-900 placeholder-gray-400"
+                          placeholder="your-link-name"
+                        />
+                        <div className="mt-2 text-sm text-gray-500 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-100">
+                          Preview: breeeve.com/pay/{username}/{formData.slug || "your-link-name"}
                         </div>
                       </div>
 
@@ -277,7 +368,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                               description: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 transition-all shadow-sm"
+                          className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 transition-all shadow-sm text-gray-900"
                           placeholder="Leave a description to help your customers understand what they're paying for."
                           rows={3}
                         />
@@ -330,7 +421,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                                       amount: e.target.value,
                                     })
                                   }
-                                  className="w-full pl-16 pr-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm"
+                                  className="w-full pl-[68px] pr-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm text-gray-900"
                                   placeholder="0.00"
                                 />
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium select-none">
@@ -374,7 +465,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                                 paymentLimit: e.target.value,
                               })
                             }
-                            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm"
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm text-gray-900"
                             placeholder="Maximum number of payments allowed"
                           />
                         </div>
@@ -393,7 +484,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                               expirationDate: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm"
+                          className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm text-gray-900"
                           min={new Date().toISOString().split("T")[0]}
                         />
                       </div>
@@ -433,9 +524,24 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                         >
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Product Images (Optional, max 3)
+                              Product Images {formData.isDigitalProduct && <span className="text-red-500">*</span>}
                             </label>
-                            <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-purple-deep/30 transition-colors cursor-pointer">
+                            <div 
+                              className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer relative
+                                ${isDragging ? 'border-purple-deep bg-purple-deep/5' : 'border-gray-200 hover:border-purple-deep/30'}`}
+                              onDragOver={handleDragOver}
+                              onDragLeave={handleDragLeave}
+                              onDrop={handleDrop}
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileInput}
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                              />
                               <div className="space-y-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -447,12 +553,37 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                                   Supported formats: JPG, PNG, GIF (max 5MB each)
                                 </p>
                               </div>
+                              {uploadError && (
+                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-red-50 text-red-500 text-sm px-3 py-1 rounded-lg">
+                                  {uploadError}
+                                </div>
+                              )}
                             </div>
+                            {formData.productImages.length > 0 && (
+                              <div className="mt-4 grid grid-cols-3 gap-4">
+                                {formData.productImages.map((file, index) => (
+                                  <div key={index} className="relative group">
+                                    <img
+                                      src={URL.createObjectURL(file)}
+                                      alt={`Preview ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded-lg"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeImage(index)}
+                                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <XMarkIcon className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Download Link
+                              Download Link {formData.isDigitalProduct && <span className="text-red-500">*</span>}
                             </label>
                             <input
                               type="url"
@@ -463,7 +594,8 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                                   downloadLink: e.target.value,
                                 })
                               }
-                              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm"
+                              required={formData.isDigitalProduct}
+                              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm text-gray-900 placeholder-gray-400"
                               placeholder="Enter download link (Google Drive, IPFS, etc.)"
                             />
                             <p className="mt-1 text-xs text-gray-500">
@@ -519,7 +651,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                               redirectUrl: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm"
+                          className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 shadow-sm text-gray-900"
                           placeholder="Enter URL to redirect after payment"
                         />
                         <p className="mt-1 text-xs text-gray-500">
@@ -552,11 +684,11 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                     </motion.div>
                   )}
 
-                  <div className="flex justify-between pt-6 border-t border-gray-100">
+                  <div className="flex justify-between pt-8 border-t border-gray-100">
                     <button
                       type="button"
                       onClick={() => setStep(step - 1)}
-                      className={`px-5 py-2.5 text-sm font-medium rounded-xl transition-colors ${
+                      className={`px-6 py-3 text-sm font-medium rounded-xl transition-colors ${
                         step === 1
                           ? "invisible"
                           : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -570,7 +702,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                       whileTap={{ scale: 0.98 }}
                       type="submit"
                       disabled={isSubmitting}
-                      className="px-5 py-2.5 bg-purple-deep text-white rounded-xl text-sm font-medium hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 bg-purple-deep text-white rounded-xl text-sm font-medium hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <span className="flex items-center">

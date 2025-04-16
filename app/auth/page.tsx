@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 export default function AuthPage() {
     const { login, ready, authenticated, user } = usePrivy()
@@ -12,7 +12,7 @@ export default function AuthPage() {
     const [isLoading, setIsLoading] = useState(false)
 
     // Function to confirm or create user
-    const handleUserConfirmation = async () => {
+    const handleUserConfirmation = useCallback(async () => {
         if (!user) return null;
 
         try {
@@ -50,7 +50,7 @@ export default function AuthPage() {
             console.error("User confirmation failed", error)
             return null
         }
-    }
+    }, [user, router])
 
     // Comprehensive sign-in handler
     const handleSignIn = async () => {
@@ -70,7 +70,7 @@ export default function AuthPage() {
             handleUserConfirmation()
                 .finally(() => setIsLoading(false))
         }
-    }, [authenticated, user])
+    }, [authenticated, user, handleUserConfirmation])
 
     // Don't render anything if Privy is not ready
     if (!ready) {
@@ -145,7 +145,7 @@ export default function AuthPage() {
                         {isLoading ? (
                             <LoginLoadingAnimation />
                         ) : (
-                            "Continue with Privy"
+                            "Continue"
                         )}
                     </motion.button>
 

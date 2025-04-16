@@ -17,7 +17,7 @@ export function PrivyProviderWrapper({ children }: { children: React.ReactNode }
             appId={privyClientId}
             config={{
                 appearance: {
-                    logo: 'https://pbs.twimg.com/profile_images/1900137034427031553/x94y6_J4_400x400.jpg',
+                    logo: 'https://bfgigow6ix.ufs.sh/f/vN6pYuozuEaZ78uqIi2ny1gmtCrxaKqX58oQDdTVkMc4LsiE',
                     accentColor: '#A390F5',
                     walletChainType: 'solana-only',
                     walletList: ['phantom', 'detected_wallets', 'wallet_connect'],
