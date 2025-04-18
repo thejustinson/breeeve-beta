@@ -148,7 +148,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
           image_urls: imageUrls
         } : null
       };
-      
+
       const response = await createLink(submissionData);
       console.log("Response:", response);
       
@@ -335,22 +335,22 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                         <p className="text-sm text-gray-500 mb-3">
                           This will be the link to your payment page. If you don&apos;t have a custom link in mind, we&apos;ll generate one for you from your title.
                         </p>
-                        <input
-                          type="text"
-                          value={formData.slug}
-                          onChange={(e) => {
-                            const cleanSlug = e.target.value
-                              .toLowerCase()
-                              .replace(/\s+/g, "-")
-                              .replace(/[^a-z0-9-]/g, "")
-                              .replace(/-+/g, "-")
-                              .replace(/^-|-$/g, "");
-                            
-                            setFormData({ ...formData, slug: cleanSlug });
-                          }}
+                          <input
+                            type="text"
+                            value={formData.slug}
+                            onChange={(e) => {
+                              const cleanSlug = e.target.value
+                                .toLowerCase()
+                                .replace(/\s+/g, "-")
+                                .replace(/[^a-z0-9-]/g, "")
+                                .replace(/-+/g, "-")
+                                .replace(/^-|-$/g, "");
+                              
+                              setFormData({ ...formData, slug: cleanSlug });
+                            }}
                           className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 transition-all shadow-sm text-gray-900 placeholder-gray-400"
-                          placeholder="your-link-name"
-                        />
+                            placeholder="your-link-name"
+                          />
                         <div className="mt-2 text-sm text-gray-500 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-100">
                           Preview: breeeve.com/pay/{username}/{formData.slug || "your-link-name"}
                         </div>

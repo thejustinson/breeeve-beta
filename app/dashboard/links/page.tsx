@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
@@ -13,56 +13,71 @@ import {
 } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'
 import { CreateLinkModal } from '@/components/CreateLinkModal'
+import { usePrivy } from '@privy-io/react-auth'
 
 type PaymentLink = {
   id: string
+  user_id: string
+  type: string
+  product_id: string | null
   name: string
-  amount: number | 'Any Amount'
-  status: 'Active' | 'Expired' | 'Disabled'
-  createdAt: string
-  url: string
   description: string
+  link: string
+  status: string
+  amount: number
+  is_flexible_amount: boolean
+  currency: string
+  payment_limit: number | null
+  clicks: number
+  created_at: string
+  expires_at: string | null
+  redirect_url: string | null
+  enable_notifications: boolean
+  sales: number
+  amount_sold: number | null
 }
-
-const mockLinks: PaymentLink[] = [
-  {
-    id: '1',
-    name: 'Freelance Project Payment',
-    description: 'Payment for website redesign project',
-    amount: 1500,
-    status: 'Active',
-    createdAt: '2024-03-10T10:00:00Z',
-    url: 'https://pay.breeve.com/freelance-project'
-  },
-  {
-    id: '2',
-    name: 'Monthly Subscription',
-    description: 'Recurring payment for premium services',
-    amount: 'Any Amount',
-    status: 'Active',
-    createdAt: '2024-03-09T15:30:00Z',
-    url: 'https://pay.breeve.com/monthly-sub'
-  },
-  {
-    id: '3',
-    name: 'One-time Donation',
-    description: 'Support our community initiatives',
-    amount: 50,
-    status: 'Expired',
-    createdAt: '2024-03-08T09:15:00Z',
-    url: 'https://pay.breeve.com/donation'
-  }
-]
 
 export default function PaymentLinks() {
   const router = useRouter()
+  const { user } = usePrivy()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [links, setLinks] = useState<PaymentLink[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const filteredLinks = mockLinks.filter(link => {
-    const matchesSearch = link.name.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    const fetchLinks = async () => {
+      if (!user?.id) return
+      
+      try {
+        const response = await fetch('/api/links/fetch', {
+          method: 'POST',
+          body: JSON.stringify({ privy_id: user.id })
+        })
+        const result = await response.json()
+        
+        if (result.data && Array.isArray(result.data)) {
+          setLinks(result.data)
+        } else {
+          console.error('Invalid link data format:', result)
+          setLinks([])
+        }
+      } catch (error) {
+        console.error('Error fetching links:', error)
+        setLinks([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchLinks()
+  }, [user?.id])
+
+  const filteredLinks = links.filter(link => {
+    const matchesSearch = link.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         link.description.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === 'all' || link.status.toLowerCase() === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -71,6 +86,69 @@ export default function PaymentLinks() {
     await navigator.clipboard.writeText(url)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const formatAmount = (amount: number, isFlexible: boolean, currency: string) => {
+    if (isFlexible) return 'Any Amount'
+    return `${currency === 'USDC' ? '$' : ''}${amount.toLocaleString()}`
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'bg-green-50 text-green-700 ring-1 ring-green-600/20'
+      case 'expired':
+        return 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-600/20'
+      case 'disabled':
+        return 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20'
+      default:
+        return 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20'
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6 max-w-[1400px] mx-auto space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded-lg w-48"></div>
+            <div className="h-4 bg-gray-200 rounded-lg w-64 mt-2"></div>
+          </div>
+          <div className="h-10 bg-gray-200 rounded-xl w-32 animate-pulse"></div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="h-10 bg-gray-200 rounded-xl w-full animate-pulse"></div>
+          <div className="h-10 bg-gray-200 rounded-xl w-40 animate-pulse"></div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="hidden lg:block">
+            <div className="h-12 bg-gray-50/50 animate-pulse"></div>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 border-b border-gray-100 animate-pulse"></div>
+            ))}
+          </div>
+          <div className="lg:hidden divide-y divide-gray-100">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="p-4 animate-pulse">
+                <div className="h-6 bg-gray-200 rounded-lg w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded-lg w-1/2 mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded-lg w-1/4"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -83,7 +161,7 @@ export default function PaymentLinks() {
               Payment Links
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Manage and track your payment links
+              {links.length} {links.length === 1 ? 'link' : 'links'} created
             </p>
           </div>
           <motion.button
@@ -155,32 +233,22 @@ export default function PaymentLinks() {
                         {link.name}
                       </p>
                       <p className="text-sm text-gray-500 mt-0.5">
-                        {link.description}
+                        {link.description || 'No description'}
                       </p>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-gray-900 font-medium">
-                        {typeof link.amount === 'number' ? `$${link.amount.toLocaleString()}` : link.amount}
+                        {formatAmount(link.amount, link.is_flexible_amount, link.currency)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                        link.status === 'Active' 
-                          ? 'bg-green-50 text-green-700 ring-1 ring-green-600/20'
-                          : link.status === 'Expired'
-                          ? 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-600/20'
-                          : 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20'
-                      }`}>
-                        {link.status}
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(link.status)}`}>
+                        {link.status.charAt(0).toUpperCase() + link.status.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-gray-600">
-                        {new Date(link.createdAt).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
+                        {formatDate(link.created_at)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -189,7 +257,7 @@ export default function PaymentLinks() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           className="p-2 text-gray-500 hover:text-purple-deep hover:bg-purple-50 rounded-lg transition-colors"
-                          onClick={() => copyToClipboard(link.url, link.id)}
+                          onClick={() => copyToClipboard(link.link, link.id)}
                         >
                           {copiedId === link.id ? (
                             <CheckIcon className="w-5 h-5" />
@@ -232,36 +300,26 @@ export default function PaymentLinks() {
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
                     <p className="font-medium text-gray-900">{link.name}</p>
-                    <p className="text-sm text-gray-500">{link.description}</p>
+                    <p className="text-sm text-gray-500">{link.description || 'No description'}</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {typeof link.amount === 'number' ? `$${link.amount.toLocaleString()}` : link.amount}
+                      {formatAmount(link.amount, link.is_flexible_amount, link.currency)}
                     </p>
                   </div>
-                  <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                    link.status === 'Active' 
-                      ? 'bg-green-50 text-green-700 ring-1 ring-green-600/20'
-                      : link.status === 'Expired'
-                      ? 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-600/20'
-                      : 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20'
-                  }`}>
-                    {link.status}
+                  <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(link.status)}`}>
+                    {link.status.charAt(0).toUpperCase() + link.status.slice(1)}
                   </span>
                 </div>
                 
                 <div className="mt-4 flex items-center justify-between text-sm">
                   <span className="text-gray-500">
-                    {new Date(link.createdAt).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+                    {formatDate(link.created_at)}
                   </span>
                   <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className="p-2 text-gray-500 hover:text-purple-deep hover:bg-purple-50 rounded-lg transition-colors"
-                      onClick={() => copyToClipboard(link.url, link.id)}
+                      onClick={() => copyToClipboard(link.link, link.id)}
                     >
                       {copiedId === link.id ? (
                         <CheckIcon className="w-5 h-5" />
