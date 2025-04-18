@@ -50,10 +50,37 @@ export default function Dashboard() {
   const [userData, setUserData] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [links, setLinks] = useState<Link[]>([])
+  const [isDataLoaded, setIsDataLoaded] = useState({
+    user: false,
+    links: false
+  })
 
+  const isFullyLoaded = !isLoading && userData !== null && links.length >= 0
+
+  const fetchLinks = async () => {
+    try {
+      const response = await fetch('/api/links/fetch', {
+        method: 'POST',
+        body: JSON.stringify({ privy_id: user?.id })
+      })
+      const result = await response.json()
+      
+      if (result.data && Array.isArray(result.data)) {
+        setLinks(result.data)
+      } else {
+        console.error('Invalid link data format:', result)
+        setLinks([])
+      }
+    } catch (error) {
+      console.error('Error fetching links:', error)
+      setLinks([])
+    } finally {
+      setIsDataLoaded(prev => ({ ...prev, links: true }))
+    }
+  }
+  
   useEffect(() => {
     const fetchUserData = async () => {
-      setIsLoading(true)
       try {
         const response = await fetch('/api/users/fetch', {
           method: 'POST',
@@ -110,18 +137,7 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error fetching user data:', error)
       } finally {
-        setIsLoading(false)
-      }
-    }
-
-    const fetchLinks = async () => {
-      const response = await fetch('/api/links/fetch', {
-        method: 'POST',
-        body: JSON.stringify({ privy_id: user?.id })
-      })
-      const data = await response.json()
-      if (data.length > 0) {
-        setLinks(data)
+        setIsDataLoaded(prev => ({ ...prev, user: true }))
       }
     }
     
@@ -129,11 +145,18 @@ export default function Dashboard() {
       fetchUserData()
       fetchLinks()
     } else {
-      setIsLoading(false)
+      setIsDataLoaded({ user: true, links: true })
     }
   }, [user?.id, router])
+
+  // Update loading state when both data sources are loaded
+  useEffect(() => {
+    if (isDataLoaded.user && isDataLoaded.links) {
+      setIsLoading(false)
+    }
+  }, [isDataLoaded])
   
-  if (isLoading) {
+  if (!isFullyLoaded) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
