@@ -25,6 +25,8 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [username, setUsername] = useState<string>("");
   const [isCopied, setIsCopied] = useState(false);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [isLinkAvailable, setIsLinkAvailable] = useState<boolean | null>(null);
   const { startUpload } = useUploadThing("imageUploader", {
     onClientUploadComplete: async (data) => {
       console.log("upload complete", data);
@@ -69,6 +71,25 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
     }
   }, []);
 
+  const checkLinkAvailability = async (slug: string) => {
+    if (!slug || slug.length < 3) {
+      setIsLinkAvailable(null);
+      return;
+    }
+
+    setIsCheckingAvailability(true);
+    try {
+      const response = await fetch(`/api/links/check-availability?user_id=${user?.id}&slug=${slug}&username=${username}`);
+      const data = await response.json();
+      setIsLinkAvailable(data.available);
+    } catch (error) {
+      console.error('Error checking link availability:', error);
+      setIsLinkAvailable(null);
+    } finally {
+      setIsCheckingAvailability(false);
+    }
+  };
+
   const resetForm = () => {
     setStep(1);
     setFormData(initialFormData);
@@ -81,7 +102,12 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
   };
 
   const generatePaymentLink = (username: string, slug: string) => {
-    return `breeeve.com/pay/${username}/${slug}`;
+    return `/${username}/${slug}`;
+  };
+
+  const generatePreviewUrl = (username: string, slug: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/${username}/${slug}`;
   };
 
   const createLink = async (data: any) => {
@@ -347,13 +373,35 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                                 .replace(/^-|-$/g, "");
                               
                               setFormData({ ...formData, slug: cleanSlug });
+                              checkLinkAvailability(cleanSlug);
                             }}
-                          className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 transition-all shadow-sm text-gray-900 placeholder-gray-400"
+                            className={`w-full px-4 py-3.5 rounded-xl bg-gray-50 border transition-all shadow-sm text-gray-900 placeholder-gray-400
+                              ${isCheckingAvailability ? 'border-yellow-400' : 
+                                isLinkAvailable === true ? 'border-green-400' : 
+                                isLinkAvailable === false ? 'border-red-400' : 
+                                'border-gray-200'}`}
                             placeholder="your-link-name"
                           />
-                        <div className="mt-2 text-sm text-gray-500 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-100">
-                          Preview: breeeve.com/pay/{username}/{formData.slug || "your-link-name"}
-                        </div>
+                          <div className="mt-2 flex items-center justify-between">
+                            <div className="text-sm text-gray-500 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-100">
+                              Preview: {generatePreviewUrl(username, formData.slug || "your-link-name")}
+                            </div>
+                            {isCheckingAvailability && (
+                              <div className="text-sm text-yellow-600">
+                                Checking availability...
+                              </div>
+                            )}
+                            {!isCheckingAvailability && isLinkAvailable === false && (
+                              <div className="text-sm text-red-600">
+                                This link is already taken
+                              </div>
+                            )}
+                            {!isCheckingAvailability && isLinkAvailable === true && (
+                              <div className="text-sm text-green-600">
+                                Link is available
+                              </div>
+                            )}
+                          </div>
                       </div>
 
                       <div>

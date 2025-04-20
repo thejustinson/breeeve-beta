@@ -13,6 +13,8 @@ import {
 } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'
 import { CreateLinkModal } from '@/components/CreateLinkModal'
+import { EditLinkModal } from '@/components/EditLinkModal'
+import { DeleteLinkModal } from '@/components/DeleteLinkModal'
 import { usePrivy } from '@privy-io/react-auth'
 
 type PaymentLink = {
@@ -46,6 +48,14 @@ export default function PaymentLinks() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [links, setLinks] = useState<PaymentLink[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingLink, setEditingLink] = useState<PaymentLink | null>(null)
+  
+  // Delete modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [deletingLink, setDeletingLink] = useState<PaymentLink | null>(null)
 
   useEffect(() => {
     const fetchLinks = async () => {
@@ -83,9 +93,11 @@ export default function PaymentLinks() {
   })
 
   const copyToClipboard = async (url: string, id: string) => {
-    await navigator.clipboard.writeText(url)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
+    const baseUrl = window.location.origin;
+    const fullUrl = `${baseUrl}${url}`;
+    await navigator.clipboard.writeText(fullUrl);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   }
 
   const formatAmount = (amount: number, isFlexible: boolean, currency: string) => {
@@ -112,6 +124,36 @@ export default function PaymentLinks() {
       default:
         return 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20'
     }
+  }
+  
+  // Edit link functions
+  const openEditModal = (link: PaymentLink, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingLink(link)
+    setIsEditModalOpen(true)
+  }
+  
+  const handleEditSuccess = (updatedLink: PaymentLink) => {
+    // Update the links list with the edited link
+    setLinks(prevLinks => 
+      prevLinks.map(link => 
+        link.id === updatedLink.id 
+          ? updatedLink 
+          : link
+      )
+    )
+  }
+  
+  // Delete link functions
+  const openDeleteModal = (link: PaymentLink, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeletingLink(link)
+    setIsDeleteModalOpen(true)
+  }
+  
+  const handleDeleteSuccess = (linkId: string) => {
+    // Remove the deleted link from the list
+    setLinks(prevLinks => prevLinks.filter(link => link.id !== linkId))
   }
 
   if (isLoading) {
@@ -225,8 +267,8 @@ export default function PaymentLinks() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     whileHover={{ backgroundColor: 'rgba(0,0,0,0.01)' }}
-                    className="group cursor-pointer"
-                    onClick={() => router.push(`/dashboard/links/${link.id}`)}
+                    className="group"
+                    // onClick={() => router.push(`/dashboard/links/${link.id}`)}
                   >
                     <td className="px-6 py-4">
                       <p className="font-medium text-gray-900 group-hover:text-purple-deep transition-colors">
@@ -269,6 +311,7 @@ export default function PaymentLinks() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           className="p-2 text-gray-500 hover:text-purple-deep hover:bg-purple-50 rounded-lg transition-colors"
+                          onClick={(e) => openEditModal(link, e)}
                         >
                           <PencilIcon className="w-5 h-5" />
                         </motion.button>
@@ -276,6 +319,7 @@ export default function PaymentLinks() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          onClick={(e) => openDeleteModal(link, e)}
                         >
                           <TrashIcon className="w-5 h-5" />
                         </motion.button>
@@ -331,6 +375,7 @@ export default function PaymentLinks() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className="p-2 text-gray-500 hover:text-purple-deep hover:bg-purple-50 rounded-lg transition-colors"
+                      onClick={(e) => openEditModal(link, e)}
                     >
                       <PencilIcon className="w-5 h-5" />
                     </motion.button>
@@ -338,6 +383,7 @@ export default function PaymentLinks() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      onClick={(e) => openDeleteModal(link, e)}
                     >
                       <TrashIcon className="w-5 h-5" />
                     </motion.button>
@@ -349,9 +395,26 @@ export default function PaymentLinks() {
         </div>
       </div>
 
+      {/* Create Link Modal */}
       <CreateLinkModal 
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+      />
+      
+      {/* Edit Link Modal */}
+      <EditLinkModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        link={editingLink}
+        onSuccess={handleEditSuccess}
+      />
+      
+      {/* Delete Link Modal */}
+      <DeleteLinkModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        link={deletingLink}
+        onSuccess={handleDeleteSuccess}
       />
     </>
   )
