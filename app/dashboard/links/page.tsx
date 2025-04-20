@@ -119,8 +119,10 @@ export default function PaymentLinks() {
         return 'bg-green-50 text-green-700 ring-1 ring-green-600/20'
       case 'expired':
         return 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-600/20'
-      case 'disabled':
+      case 'inactive':
         return 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20'
+      case 'used':
+        return 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20'
       default:
         return 'bg-gray-100 text-gray-700 ring-1 ring-gray-600/20'
     }
@@ -237,8 +239,9 @@ export default function PaymentLinks() {
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
               <option value="expired">Expired</option>
-              <option value="disabled">Disabled</option>
+              <option value="used">Used</option>
             </select>
             <button className="p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 hover:border-purple-deep/20 hover:bg-purple-50 transition-colors">
               <AdjustmentsHorizontalIcon className="w-5 h-5" />

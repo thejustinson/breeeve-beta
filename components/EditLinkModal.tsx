@@ -102,6 +102,13 @@ export function EditLinkModal({ isOpen, onClose, link, onSuccess }: EditLinkModa
     setEditError(null)
     
     try {
+      // Validate status
+      if (editFormData.status !== 'active' && editFormData.status !== 'inactive') {
+        setEditError('Invalid status value. Status must be either active or inactive.')
+        setIsEditing(false)
+        return
+      }
+
       const response = await fetch('/api/links/update', {
         method: 'POST',
         headers: {
@@ -376,9 +383,11 @@ export function EditLinkModal({ isOpen, onClose, link, onSuccess }: EditLinkModa
                               className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 text-gray-900"
                             >
                               <option value="active">Active</option>
-                              <option value="expired">Expired</option>
-                              <option value="disabled">Disabled</option>
+                              <option value="inactive">Inactive</option>
                             </select>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Note: Links will automatically be marked as expired when they reach their expiration date, and as used when they reach their payment limit.
+                            </p>
                           </div>
 
                           <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-white transition-colors">
