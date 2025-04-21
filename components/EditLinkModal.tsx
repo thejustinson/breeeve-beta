@@ -52,13 +52,24 @@ export function EditLinkModal({ isOpen, onClose, link, onSuccess }: EditLinkModa
   // Update form data when link changes
   useEffect(() => {
     if (link) {
+      // Determine if the link is expired or used
+      const now = new Date();
+      const expiryDate = link.expires_at ? new Date(link.expires_at) : null;
+      const isExpired = expiryDate && now > expiryDate;
+      
+      // Only consider a link "used" if payment_limit is not null
+      const isUsed = link.payment_limit !== null && link.sales >= link.payment_limit;
+      
+      // If the link is expired or used, we should set it to inactive
+      const effectiveStatus = isExpired || isUsed ? 'inactive' : link.status;
+      
       setEditFormData({
         name: link.name,
         description: link.description || '',
         amount: link.amount,
         is_flexible_amount: link.is_flexible_amount,
         currency: link.currency,
-        status: link.status,
+        status: effectiveStatus,
         enable_notifications: link.enable_notifications,
         payment_limit: link.payment_limit,
         expires_at: link.expires_at,
@@ -105,6 +116,18 @@ export function EditLinkModal({ isOpen, onClose, link, onSuccess }: EditLinkModa
       // Validate status
       if (editFormData.status !== 'active' && editFormData.status !== 'inactive') {
         setEditError('Invalid status value. Status must be either active or inactive.')
+        setIsEditing(false)
+        return
+      }
+
+      // Check if the link should be expired based on expiration date
+      const now = new Date();
+      const expiryDate = editFormData.expires_at ? new Date(editFormData.expires_at) : null;
+      const isExpired = expiryDate && now > expiryDate;
+      
+      // If the link is expired, we should set it to inactive instead
+      if (isExpired && editFormData.status === 'active') {
+        setEditError('This link has expired. Please set it to inactive.')
         setIsEditing(false)
         return
       }
@@ -386,7 +409,7 @@ export function EditLinkModal({ isOpen, onClose, link, onSuccess }: EditLinkModa
                               <option value="inactive">Inactive</option>
                             </select>
                             <p className="mt-1 text-xs text-gray-500">
-                              Note: Links will automatically be marked as expired when they reach their expiration date, and as used when they reach their payment limit.
+                              Note: Links will automatically be marked as expired when they reach their expiration date, and as used when they reach their payment limit. You can only manually set a link to active or inactive.
                             </p>
                           </div>
 

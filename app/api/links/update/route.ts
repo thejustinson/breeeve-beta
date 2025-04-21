@@ -32,15 +32,23 @@ export async function POST(request: NextRequest) {
         description,
         amount,
         is_flexible_amount,
-        currency,
+        currency: currency || 'USDC',
         payment_limit,
         expires_at,
         redirect_url,
-        enable_notifications,
-        status
+        enable_notifications: enable_notifications || false,
+        status: status || 'active'
       })
       .eq('id', link_id)
-      .select()
+      .select(`
+        *,
+        products (
+          id,
+          download_link,
+          image_urls,
+          created_at
+        )
+      `)
       .single();
     
     if (updateError) {
@@ -48,10 +56,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to update link" }, { status: 500 });
     }
     
+    // Transform the data to match the expected format
+    const transformedData = {
+      ...updatedLink,
+      product: updatedLink.products?.[0] ? {
+        ...updatedLink.products[0],
+        image_urls: updatedLink.products[0].image_urls ? JSON.parse(updatedLink.products[0].image_urls) : []
+      } : null
+    }
+    delete transformedData.products
+    
     return NextResponse.json({ 
       success: true, 
       message: "Link updated successfully",
-      data: updatedLink
+      data: transformedData
     });
     
   } catch (error) {

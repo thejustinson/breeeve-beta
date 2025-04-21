@@ -57,6 +57,25 @@ export default function PaymentLinks() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [deletingLink, setDeletingLink] = useState<PaymentLink | null>(null)
 
+  // Function to determine the actual status of a link
+  const getActualStatus = (link: PaymentLink): string => {
+    // Check if the link is expired
+    const now = new Date();
+    const expiryDate = link.expires_at ? new Date(link.expires_at) : null;
+    if (expiryDate && now > expiryDate) {
+      return 'expired';
+    }
+    
+    // Check if the link has reached its payment limit
+    // Only apply "used" status if payment_limit is not null
+    if (link.payment_limit !== null && link.sales >= link.payment_limit) {
+      return 'used';
+    }
+    
+    // Otherwise, use the status from the database
+    return link.status;
+  }
+
   useEffect(() => {
     const fetchLinks = async () => {
       if (!user?.id) return
@@ -88,8 +107,12 @@ export default function PaymentLinks() {
   const filteredLinks = links.filter(link => {
     const matchesSearch = link.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          link.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || link.status.toLowerCase() === statusFilter
-    return matchesSearch && matchesStatus
+    
+    // Determine the actual status based on conditions
+    const actualStatus = getActualStatus(link);
+    const matchesStatus = statusFilter === 'all' || actualStatus.toLowerCase() === statusFilter;
+    
+    return matchesSearch && matchesStatus;
   })
 
   const copyToClipboard = async (url: string, id: string) => {
@@ -270,8 +293,8 @@ export default function PaymentLinks() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     whileHover={{ backgroundColor: 'rgba(0,0,0,0.01)' }}
-                    className="group"
-                    // onClick={() => router.push(`/dashboard/links/${link.id}`)}
+                    className="group cursor-pointer"
+                    onClick={() => router.push(`/dashboard/links/${link.id}`)}
                   >
                     <td className="px-6 py-4">
                       <p className="font-medium text-gray-900 group-hover:text-purple-deep transition-colors">
@@ -287,8 +310,8 @@ export default function PaymentLinks() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(link.status)}`}>
-                        {link.status.charAt(0).toUpperCase() + link.status.slice(1)}
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(getActualStatus(link))}`}>
+                        {getActualStatus(link).charAt(0).toUpperCase() + getActualStatus(link).slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -341,7 +364,7 @@ export default function PaymentLinks() {
                 key={link.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="p-4 hover:bg-gray-50 transition-colors"
+                className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => router.push(`/dashboard/links/${link.id}`)}
               >
                 <div className="flex justify-between items-start">
@@ -352,8 +375,8 @@ export default function PaymentLinks() {
                       {formatAmount(link.amount, link.is_flexible_amount, link.currency)}
                     </p>
                   </div>
-                  <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(link.status)}`}>
-                    {link.status.charAt(0).toUpperCase() + link.status.slice(1)}
+                  <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(getActualStatus(link))}`}>
+                    {getActualStatus(link).charAt(0).toUpperCase() + getActualStatus(link).slice(1)}
                   </span>
                 </div>
                 
