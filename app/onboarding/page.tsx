@@ -39,7 +39,7 @@ const steps = [
 export default function Onboarding() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
-  const { user, logout, authenticated } = usePrivy()
+  const { user, authenticated } = usePrivy()
   const {createWallet} = useSolanaWallets()
   const [formData, setFormData] = useState({
     email: user?.email?.address || '',
@@ -213,7 +213,7 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 px-4 py-20">
 
-      {authenticated && (
+      {/* {authenticated && (
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -222,7 +222,7 @@ export default function Onboarding() {
         >
           Logout (Dev)
         </motion.button>
-      )}
+      )} */}
 
       {checkingOnboardingStatus ? (
         <div className="flex flex-col items-center justify-center">

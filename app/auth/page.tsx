@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback, useRef } from 'react'
 
 export default function AuthPage() {
-    const { login, ready, authenticated, user, logout } = usePrivy()
+    const { login, ready, authenticated, user } = usePrivy()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const requestInProgressRef = useRef(false)
@@ -105,7 +105,7 @@ export default function AuthPage() {
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 px-4">
-            {authenticated && (
+            {/* {authenticated && (
                 <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -114,7 +114,7 @@ export default function AuthPage() {
                 >
                     Logout (Dev)
                 </motion.button>
-            )}
+            )} */}
 
             <motion.div
                 initial={{ opacity: 0, y: 10 }}

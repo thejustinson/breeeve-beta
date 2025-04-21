@@ -181,8 +181,8 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
       const response = await createLink(submissionData);
       console.log("Response:", response);
       
+      router.refresh();
       handleClose();
-      router.refresh()
       
     } catch (error) {
       console.error('Error creating payment link:', error);
