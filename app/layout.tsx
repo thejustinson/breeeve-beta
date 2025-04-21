@@ -27,10 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable}`}>
       <PrivyProviderWrapper>
-        <AuthStatus />
-        <body className="font-sans bg-white dark:bg-gray-900">
-          {children}
-        </body>
+          <AuthStatus />
+          <body className="font-sans bg-white dark:bg-gray-900">
+            {children}
+          </body>
       </PrivyProviderWrapper>
     </html>
   )

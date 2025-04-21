@@ -42,7 +42,7 @@ type Product = {
   id: string
   link_id: string
   download_link: string
-  image_urls: string[]
+  image_urls: string
   created_at: string
 }
 
@@ -75,15 +75,25 @@ export default function CheckoutPage() {
         
         // First, fetch the user by username
         const userResponse = await fetch(`/api/users/fetch-by-username?username=${username}`)
-        const userResult = await userResponse.json()
+        const userResult = await userResponse.json() as { privy_id: string; username: string; name: string; image: string }
+
+        console.log(userResult)
+
+        const { privy_id: id} = userResult
         
-        if (!userResult.id) {
+        if (!id) {
           setError('User not found')
           setIsLoading(false)
           return
         }
         
-        setUser(userResult)
+        setUser({
+          id: userResult.privy_id,
+          username: userResult.username,
+          name: userResult.name,
+          image: userResult.image
+        })
+
         
         // Then fetch the link using the user ID and slug
         const linkPath = `/${username}/${slug}`
@@ -93,7 +103,7 @@ export default function CheckoutPage() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            user_id: userResult.id,
+            user_id: userResult.privy_id,
             link: linkPath
           })
         })
@@ -159,6 +169,10 @@ export default function CheckoutPage() {
 
     fetchLinkData()
   }, [username, slug])
+
+  useEffect(() => {
+    console.log(user)
+  }, [user])
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value)
@@ -303,11 +317,11 @@ export default function CheckoutPage() {
                 )}
                 
                 {/* Product Images Section - Only show if it's a product link */}
-                {link.type === 'product' && link.product && link.product.image_urls && link.product.image_urls.length > 0 && (
+                {link.type === 'product' && link.product && link.product.image_urls && (
                   <div>
                     <h2 className="text-lg font-medium text-gray-900 mb-4">Product Images</h2>
                     <div className="grid grid-cols-2 gap-4">
-                      {link.product.image_urls.map((url, index) => (
+                      {(JSON.parse(link.product.image_urls) as string[]).map((url, index) => (
                         <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                           <Image 
                             src={url} 

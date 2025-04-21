@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useContext, createContext } from 'react'
+import { useState, useContext, createContext, useEffect } from 'react'
 import { 
   HomeIcon, 
   LinkIcon, 
@@ -18,6 +18,8 @@ import {
 } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'
 import { usePrivy } from '@privy-io/react-auth'
+import Image from 'next/image'
+
 const navItems = [
   { 
     name: 'Overview', 
@@ -58,7 +60,36 @@ type SideNavProps = {
 
 const SideNavContext = createContext({ onClose: () => {} })
 
+interface User {
+  username: string;
+  name: string;
+  email: string;
+  image: string;
+  public_key: string | null;
+  link: string;
+  balance: number;
+}
+
 export function TopNav({ onMenuClick }: { onMenuClick: () => void }) {
+  const { user } = usePrivy()
+  const [userData, setUserData] = useState<User | null>(null)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const response = await fetch('/api/users/fetch', {
+        method: 'POST',
+        body: JSON.stringify({ privy_id: user?.id })
+      })
+      const data = await response.json()
+      setUserData(data)
+    }
+
+    if(user?.id) {
+      fetchUser()
+    }
+  }, [user])
+
+
   return (
     <div className="h-16 fixed top-0 right-0 left-0 z-10 bg-white border-b border-gray-100">
       <div className="h-full flex items-center justify-between px-6">
@@ -77,13 +108,16 @@ export function TopNav({ onMenuClick }: { onMenuClick: () => void }) {
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-purple-deep rounded-full" />
           </button>
           <button className="flex items-center gap-3 text-gray-700 hover:text-gray-900 transition-colors">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-deep to-purple-light flex items-center justify-center text-white text-sm font-medium">
-              A
+            <div className="w-8 h-8 rounded-full bg-purple-light/20 flex items-center justify-center text-white text-sm font-medium">
+              {userData?.image ? (
+                <Image src={userData.image} alt={userData.name} width={32} height={32} className="rounded-full" unoptimized/>
+              ) : (
+                <UserCircleIcon className="w-5 h-5 text-purple-deep" />
+              )}
             </div>
-            <span className="text-sm font-medium hidden sm:block">Alex</span>
           </button>
           <button onClick={onMenuClick} className="text-gray-500 lg:hidden">
-            <Bars3Icon className="w-6 h-6" />
+            <Bars3Icon className="w-8 h-8" />
           </button>
         </div>
       </div>
@@ -200,7 +234,9 @@ function NavContent({ pathname }: { pathname: string }) {
           <p className="text-sm text-gray-500 mb-3">
             We&apos;re here to assist you
           </p>
-          <button className="w-full bg-white text-gray-700 hover:text-purple-deep px-4 py-2 rounded-xl text-sm font-medium transition-colors border border-gray-200 hover:border-purple-deep/20">
+          <button className="w-full bg-white text-gray-700 hover:text-purple-deep px-4 py-2 rounded-xl text-sm font-medium transition-colors border border-gray-200 hover:border-purple-deep/20" onClick={() => {
+            window.open('https://t.me/breeeve', '_blank')
+          }}>
             Contact Support
           </button>
         </div>

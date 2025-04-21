@@ -3,7 +3,7 @@ import supabase from "@/utils/SupabaseClient";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+  const body = await request.json();
     console.log("Received link creation request:", body);
     
     // Start a transaction to create both link and product if needed

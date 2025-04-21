@@ -7,24 +7,16 @@ import { CreateLinkModal } from '@/components/CreateLinkModal'
 import { usePrivy } from '@privy-io/react-auth'
 import { useRouter } from 'next/navigation'
 
-const mockTransactions = [
-  {
-    id: '1',
-    payer: 'alice.sol',
-    amount: 100,
-    status: 'Completed',
-    timestamp: '2024-03-10T10:00:00Z',
-    type: 'incoming'
-  },
-  {
-    id: '2',
-    payer: 'bob.sol',
-    amount: 50,
-    status: 'Pending',
-    timestamp: '2024-03-10T09:30:00Z',
-    type: 'incoming'
-  },
-]
+interface Transaction {
+  id: string;
+  type: 'incoming' | 'outgoing';
+  status: 'Completed' | 'Pending';
+  payer: string;
+  amount: number;
+  timestamp: string;
+}
+
+const transactions: Transaction[] = []
 
 interface User {
   username: string;
@@ -109,23 +101,6 @@ export default function Dashboard() {
             balance: data.balance
           }
 
-          if(!userdata.public_key) {
-            const publicKey = user?.linkedAccounts.find(
-              account => account.type === "wallet" && account.chainType === "solana"
-          ) as { address: string } | undefined;
-
-            const update_public_key = await fetch('api/users/update/public-key', {
-              method: 'POST',
-              body: JSON.stringify({ public_key: publicKey?.address, privy_id: user?.id })
-            })
-
-            if(!update_public_key.ok) {
-              console.log('Error updating public key')
-            }
-
-            userdata.public_key = publicKey?.address
-          }
-
           setUserData(userdata)
 
           if(localStorage.getItem('userdata') === null || JSON.parse(localStorage.getItem('userdata') || '{}').username !== userdata.username) {
@@ -142,6 +117,7 @@ export default function Dashboard() {
     }
     
     if (user?.id) {
+      console.log(user)
       fetchUserData()
       fetchLinks()
     } else {
@@ -344,8 +320,8 @@ export default function Dashboard() {
                     This Week
                   </span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">48</div>
-                <p className="mt-2 text-sm text-gray-500">8 new transactions</p>
+                <div className="text-3xl font-bold text-gray-900">0</div>
+                <p className="mt-2 text-sm text-gray-500">0 new transactions</p>
               </motion.div>
             </div>
           </div>
@@ -367,49 +343,55 @@ export default function Dashboard() {
               </div>
 
               <div className="divide-y divide-gray-100">
-                {mockTransactions.map((tx, index) => (
-                  <motion.div
-                    key={tx.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
-                        tx.status === 'Completed' ? 'bg-green-50' : 'bg-yellow-50'
-                      }`}>
-                        {tx.type === 'incoming' ? (
-                          <ArrowDownIcon className={`w-5 h-5 ${
-                            tx.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'
-                          }`} />
-                        ) : (
-                          <ArrowUpIcon className={`w-5 h-5 ${
-                            tx.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'
-                          }`} />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-gray-900 truncate">{tx.payer}</p>
-                          <p className="font-medium text-gray-900">
-                            ${tx.amount.toFixed(2)}
-                          </p>
+                {transactions.length > 0 ? (
+                  transactions.map((tx, index) => (
+                    <motion.div
+                      key={tx.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                          tx.status === 'Completed' ? 'bg-green-50' : 'bg-yellow-50'
+                        }`}>
+                          {tx.type === 'incoming' ? (
+                            <ArrowDownIcon className={`w-5 h-5 ${
+                              tx.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'
+                            }`} />
+                          ) : (
+                            <ArrowUpIcon className={`w-5 h-5 ${
+                              tx.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'
+                            }`} />
+                          )}
                         </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="text-sm text-gray-500">
-                            {new Date(tx.timestamp).toLocaleDateString()}
-                          </p>
-                          <p className={`text-sm ${
-                            tx.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'
-                          }`}>
-                            {tx.status}
-                          </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-gray-900 truncate">{tx.payer}</p>
+                            <p className="font-medium text-gray-900">
+                              ${tx.amount.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-sm text-gray-500">
+                              {new Date(tx.timestamp).toLocaleDateString()}
+                            </p>
+                            <p className={`text-sm ${
+                              tx.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'
+                            }`}>
+                              {tx.status}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    No transactions yet
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useUploadThing } from "@/utils/uploadthing";
 import { usePrivy } from "@privy-io/react-auth";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 type CreateLinkModalProps = {
   isOpen: boolean;
@@ -33,6 +35,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
     },
   });
   const { user } = usePrivy();
+  const router = useRouter();
   
   const initialFormData = {
     // Step 1: Basic Info
@@ -179,6 +182,8 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
       console.log("Response:", response);
       
       handleClose();
+      router.refresh()
+      
     } catch (error) {
       console.error('Error creating payment link:', error);
     } finally {
@@ -611,10 +616,13 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                               <div className="mt-4 grid grid-cols-3 gap-4">
                                 {formData.productImages.map((file, index) => (
                                   <div key={index} className="relative group">
-                                    <img
+                                    <Image
                                       src={URL.createObjectURL(file)}
                                       alt={`Preview ${index + 1}`}
                                       className="w-full h-24 object-cover rounded-lg"
+                                      width={100}
+                                      height={100}
+                                      unoptimized
                                     />
                                     <button
                                       type="button"
@@ -666,7 +674,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                         </label>
                         <div className="flex items-center px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-purple-deep overflow-hidden">
                           <span className="truncate">
-                            {generatePaymentLink(username, formData.slug || "your-link-name")}
+                            {generatePreviewUrl(username, formData.slug || "your-link-name")}
                           </span>
                           <button 
                             type="button"
@@ -676,7 +684,7 @@ export function CreateLinkModal({ isOpen, onClose }: CreateLinkModalProps) {
                                 : 'text-gray-500 hover:text-gray-700 bg-white border-gray-200'
                             }`}
                             onClick={() => {
-                              navigator.clipboard.writeText(generatePaymentLink(username, formData.slug || "your-link-name"));
+                              navigator.clipboard.writeText(generatePreviewUrl(username, formData.slug || "your-link-name"));
                               setIsCopied(true);
                               setTimeout(() => setIsCopied(false), 2000);
                             }}

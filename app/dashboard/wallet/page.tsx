@@ -10,7 +10,7 @@ import { TransactionList } from '@/components/wallet/TransactionList'
 export default function WalletPage() {
   const [isSendOpen, setIsSendOpen] = useState(false)
   const [isReceiveOpen, setIsReceiveOpen] = useState(false)
-  const balance = 1234.56 // TODO: Replace with actual balance
+  const balance = 0 // TODO: Replace with actual balance
 
   return (
     <div className="min-h-screen bg-gray-50">

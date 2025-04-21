@@ -66,7 +66,7 @@ export function ReceiveModal({ onClose }: ReceiveModalProps) {
                 type="text"
                 value={address}
                 readOnly
-                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-purple-deep/20 focus:ring-2 focus:ring-purple-deep/10 text-purple-deep"
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}

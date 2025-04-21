@@ -4,17 +4,20 @@ import { motion } from 'framer-motion'
 import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 
 export default function AuthPage() {
-    const { login, ready, authenticated, user } = usePrivy()
+    const { login, ready, authenticated, user, logout } = usePrivy()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
+    const requestInProgressRef = useRef(false)
 
     // Function to confirm or create user
     const handleUserConfirmation = useCallback(async () => {
-        if (!user) return null;
-
+        if (!user || requestInProgressRef.current) return null;
+        
+        requestInProgressRef.current = true;
+        
         try {
             // Confirm user existence
             const confirmResponse = await fetch('/api/users/confirm', {
@@ -49,6 +52,8 @@ export default function AuthPage() {
         } catch (error) {
             console.error("User confirmation failed", error)
             return null
+        } finally {
+            requestInProgressRef.current = false;
         }
     }, [user, router])
 
@@ -66,7 +71,7 @@ export default function AuthPage() {
 
     // Handle user confirmation after authentication
     useEffect(() => {
-        if (authenticated && user) {
+        if (authenticated && user && !requestInProgressRef.current) {
             handleUserConfirmation()
                 .finally(() => setIsLoading(false))
         }
@@ -100,7 +105,7 @@ export default function AuthPage() {
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 px-4">
-            {/* {authenticated && (
+            {authenticated && (
                 <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -109,7 +114,7 @@ export default function AuthPage() {
                 >
                     Logout (Dev)
                 </motion.button>
-            )} */}
+            )}
 
             <motion.div
                 initial={{ opacity: 0, y: 10 }}

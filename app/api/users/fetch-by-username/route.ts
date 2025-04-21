@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import supabase from '@/utils/SupabaseClient'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const username = searchParams.get('username')
@@ -13,9 +13,9 @@ export async function GET(request: Request) {
       )
     }
 
-    const { data, error } = await supabase
+    const { data: user, error } = await supabase
       .from('users')
-      .select('id, username, name, image')
+      .select('privy_id, username, name, image, onboarded, public_key')
       .eq('username', username)
       .single()
 
@@ -27,14 +27,14 @@ export async function GET(request: Request) {
       )
     }
 
-    if (!data) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(user)
   } catch (error) {
     console.error('Error in fetch-by-username:', error)
     return NextResponse.json(

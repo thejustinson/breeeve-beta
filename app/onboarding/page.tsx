@@ -3,8 +3,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { OnboardingProgress } from '@/components/OnboardingProgress'
 import { usePrivy } from '@privy-io/react-auth'
+import { useSolanaWallets } from '@privy-io/react-auth/solana'
 import { useUploadThing } from "@/utils/uploadthing"
 import {
   UserIcon,
@@ -37,7 +39,8 @@ const steps = [
 export default function Onboarding() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
-  const { user } = usePrivy()
+  const { user, logout, authenticated } = usePrivy()
+  const {createWallet} = useSolanaWallets()
   const [formData, setFormData] = useState({
     email: user?.email?.address || '',
     link: "",
@@ -48,46 +51,69 @@ export default function Onboarding() {
   const [isLoading, setIsLoading] = useState(false)
   const [isUsernameAvailable, setIsUsernameAvailable] = useState(true)
   const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [checkingOnboardingStatus, setCheckingOnboardingStatus] = useState(true)
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
-      if (checkingOnboardingStatus) return; // Prevent multiple simultaneous checks
+      // Don't proceed if no user ID
+      if (!user?.id) {
+        setCheckingOnboardingStatus(false);
+        return;
+      }
       
+      // Set loading state
       setCheckingOnboardingStatus(true);
+      
+      // Add a timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        setCheckingOnboardingStatus(false);
+        console.error('Onboarding status check timed out');
+      }, 10000); // 10 second timeout
+      
       try {
+        // Check if the user is already onboarded
         const response = await fetch('/api/users/onboarded', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ privy_id: user?.id })
+          body: JSON.stringify({ privy_id: user.id })
         });
         
+        clearTimeout(timeoutId); // Clear timeout on success
+        
         if (!response.ok) {
-          throw new Error('Failed to check onboarding status');
+          const errorData = await response.json();
+          console.error('Error checking onboarding status:', errorData);
+          throw new Error(`Failed to check onboarding status: ${errorData.error || response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('Onboarding status response:', data);
+        
         if (data.onboarded) {
           await router.replace('/dashboard');
         }
       } catch (error) {
         console.error('Error checking onboarding status:', error);
-        // Optionally show a user-friendly error message
+        // Show a user-friendly error message
+        alert('There was an error checking your account status. Please try refreshing the page.');
       } finally {
         setCheckingOnboardingStatus(false);
       }
     };
     
-    if (user?.id) {
-      checkOnboardingStatus()
-    } else {
-      setCheckingOnboardingStatus(false)
-    }
-  }, [user?.id, router])
-  
+    // Run the check
+    checkOnboardingStatus();
+    
+    // Cleanup function to clear timeout if component unmounts
+    return () => {
+      setCheckingOnboardingStatus(false);
+    };
+  }, [user?.id, router]);
+
 
   const handleUsernameChange = async (value: string) => {
     setFormData({ ...formData, username: value })
@@ -132,16 +158,16 @@ export default function Onboarding() {
   }
 
   // Upload image to uploadthing
-
   const { startUpload } = useUploadThing("imageUploader", {
     onClientUploadComplete: async (data) => {
       console.log("upload complete", data);
+      setIsUploading(false);
       const fileUrl = data[0].ufsUrl
 
       // Onboard user
-      const publicKey = user?.linkedAccounts.find(
-        account => account.type === "wallet" && account.chainType === "solana"
-    ) as { address: string } | undefined;
+      const wallet = await createWallet()
+      const publicKey = wallet.address
+
       const response = await fetch('/api/users/onboard', {
         method: 'POST',
         body: JSON.stringify({
@@ -150,11 +176,11 @@ export default function Onboarding() {
           username: formData.username,
           name: formData.fullName,
           image: fileUrl,
-          public_key: publicKey?.address,
-          link: `breeeve.com/pay/${formData.username}`
+          public_key: publicKey,
+          link: `breeeve.com/${formData.username}`
         })
       })
-  
+
       if (response.ok) {
         confetti({
           particleCount: 100,
@@ -164,25 +190,40 @@ export default function Onboarding() {
         setTimeout(() => router.push('/dashboard'), 1000)
       } else {
         console.error('Failed to onboard user')
+        alert('Failed to complete onboarding. Please try again.');
       }
     },
-    onUploadError: () => {
-      alert("error occurred while uploading");
+    onUploadError: (error) => {
+      console.error("Upload error:", error);
+      setIsUploading(false);
+      alert("Error uploading image. Please try again or skip this step.");
     },
     onUploadBegin: (file) => {
       console.log("upload has begun for", file);
+      setIsUploading(true);
     },
   });
 
   const handleSubmit = async () => {
     setIsLoading(true)
     // TODO: Add actual form submission
-
     startUpload(formData.image ? [formData.image] : []);
   }
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 px-4 py-20">
+
+      {authenticated && (
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => logout()}
+          className="fixed top-4 right-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-lg text-sm font-medium"
+        >
+          Logout (Dev)
+        </motion.button>
+      )}
+
       {checkingOnboardingStatus ? (
         <div className="flex flex-col items-center justify-center">
           <div className="w-12 h-12 border-4 border-purple-deep/20 border-t-purple-deep rounded-full animate-spin"></div>
@@ -237,10 +278,10 @@ export default function Onboarding() {
                         <div className="min-h-[20px]">
                           {formData.username && (
                             <p className={`text-sm ${usernameError
-                                ? 'text-red-600'
-                                : isUsernameAvailable
-                                  ? 'text-green-600'
-                                  : 'text-gray-500'
+                              ? 'text-red-600'
+                              : isUsernameAvailable
+                                ? 'text-green-600'
+                                : 'text-gray-500'
                               }`}>
                               {usernameError || (isUsernameAvailable ? '✓ Username is available' : 'Enter at least 3 characters')}
                             </p>
@@ -251,7 +292,7 @@ export default function Onboarding() {
                       <div className="mt-1 p-4 bg-gray-50 rounded-xl">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <LinkIcon className="w-4 h-4" />
-                          <span>breeeve.com/pay/{formData.username || 'username'}</span>
+                          <span>breeeve.com/{formData.username || 'username'}</span>
                         </div>
                       </div>
                     </motion.div>
@@ -325,11 +366,15 @@ export default function Onboarding() {
                       <div className="space-y-4">
                         <div className="flex justify-center">
                           {formData.image ? (
-                            <img
-                              src={URL.createObjectURL(formData.image)}
-                              alt="Profile"
-                              className="w-32 h-32 rounded-full object-cover"
-                            />
+                            <div className="w-32 h-32 rounded-full overflow-hidden relative">
+                              <Image
+                                src={URL.createObjectURL(formData.image)}
+                                alt="Profile"
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            </div>
                           ) : (
                             <div className="w-32 h-32 rounded-full bg-purple-deep/10 flex items-center justify-center">
                               <PhotoIcon className="w-12 h-12 text-purple-deep" />
@@ -379,11 +424,15 @@ export default function Onboarding() {
                       <div className="space-y-4 bg-gray-50 p-4 rounded-xl">
                         <div className="flex items-center gap-4">
                           {formData.image ? (
-                            <img
-                              src={URL.createObjectURL(formData.image)}
-                              alt="Profile"
-                              className="w-16 h-16 rounded-full object-cover"
-                            />
+                            <div className="w-16 h-16 rounded-full overflow-hidden relative">
+                              <Image
+                                src={URL.createObjectURL(formData.image)}
+                                alt="Profile"
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            </div>
                           ) : (
                             <div className="w-16 h-16 rounded-full bg-purple-deep/10 flex items-center justify-center">
                               <UserIcon className="w-8 h-8 text-purple-deep" />
@@ -399,7 +448,7 @@ export default function Onboarding() {
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <LinkIcon className="w-4 h-4" />
-                          <span>breeeve.com/pay/{formData.username}</span>
+                          <span>breeeve.com/{formData.username}</span>
                         </div>
                       </div>
                     </motion.div>
@@ -410,8 +459,8 @@ export default function Onboarding() {
                   <button
                     onClick={() => setCurrentStep(currentStep - 1)}
                     className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${currentStep === 1
-                        ? 'invisible'
-                        : 'text-gray-600 hover:text-gray-900'
+                      ? 'invisible'
+                      : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
                     Back
@@ -426,13 +475,13 @@ export default function Onboarding() {
                         setCurrentStep(currentStep + 1)
                       }
                     }}
-                    disabled={currentStep === 1 && !isUsernameAvailable}
-                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${isLoading
+                    disabled={currentStep === 1 && !isUsernameAvailable || isUploading}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${isLoading || isUploading
                         ? 'bg-purple-deep/50 cursor-not-allowed'
                         : 'bg-purple-deep hover:bg-purple-deep/90'
                       } text-white ${currentStep === 1 && !isUsernameAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {isLoading ? 'Setting up...' : currentStep === 4 ? 'Complete Setup' : 'Continue'}
+                    {isLoading ? 'Setting up...' : isUploading ? 'Uploading...' : currentStep === 4 ? 'Complete Setup' : 'Continue'}
                   </motion.button>
                 </div>
               </div>

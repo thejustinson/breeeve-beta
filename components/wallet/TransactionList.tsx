@@ -12,17 +12,7 @@ type Transaction = {
   address: string
 }
 
-const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    type: 'received',
-    amount: 500,
-    status: 'completed',
-    date: new Date(),
-    address: '0x1234...5678'
-  },
-  // Add more mock transactions as needed
-]
+const mockTransactions: Transaction[] = []
 
 export function TransactionList() {
   return (
